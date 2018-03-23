@@ -1,0 +1,422 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+/*
+KETERANGAN TINGKATAN HAK AKSES
+1.User=Pelanggan('registerasi,login,update,delete data dirinya sendiri,transaksi')
+
+2.Admin=Pegawai('registerasi,login,update,delete data dirinya sendiri,melihat data pelanggan kecuali username dan passwordnya,melihat feedback pelanggan,statistik,melihat transaksi')
+
+
+ */
+/*
+CARA AKSES (JIKA PAKAI LOCAL)
+http://localhost/ci_resiklaundry/index.php/Con_resiklaundry/dash_logad (ADMIN)
+http://localhost/ci_resiklaundry (PELANGGAN)
+ */
+class Con_resiklaundry extends CI_Controller {
+
+	function __construct() {
+		parent::__construct();
+		$this->load->model('Mo_resiklaundry');
+	}
+
+	/*USER ZONE*/
+	public function index() {
+		$this->load->view('user/index');
+	}
+	public function dash_regpel() {
+		$this->load->view('user/register');
+	}
+	public function dash_logipel() {
+		$this->load->view('user/login');
+	}
+	public function dash_uppel() {
+		$this->load->view('user/edit_user');
+	}
+	public function dash_chodel() {
+		$this->load->view('user/choice_del');
+	}
+	public function dash_mailpel() {
+		$this->load->view('user/tabel_mail');
+	}
+	/*REGISTER USER*/
+	public function regpel() {
+		if ($this->input->post('submit')) {
+			$usernamepel = $this->input->post('usernamepel');
+			$this->form_validation->set_rules('namapel', 'this input', 'trim|required');
+			$this->form_validation->set_rules('alapel', 'this input', 'trim|required');
+			$this->form_validation->set_rules('nopel', 'this input', 'trim|required');
+			$this->form_validation->set_rules('emapel', 'this input', 'trim|required|max_length[40]');
+			$this->form_validation->set_rules('usernamepel', 'this input', 'trim|required|max_length[35]');
+			$this->form_validation->set_rules('passwordpel', 'this input', 'trim|required|max_length[35]');
+		}
+		if ($this->form_validation->run() == true) {
+			if ($this->Mo_resiklaundry->check_regpelduplicate($usernamepel) == true) {
+				$data['dup_username'] = "Username sudah dipakai";
+				$this->session->set_flashdata('msg_reg', '<div class="alert alert-danger"><h5 style="color:black;"><b>Registerasi Gagal</b>,
+				<br>Username sudah terpakai</h5></div>,');
+				$this->load->view('user/register', $data);
+			} else {
+				if ($this->Mo_resiklaundry->regpel_proc() == true) {
+					$this->session->set_flashdata('msg_reg',
+						'<div class="alert alert-success"><h5 style="color:black;"><b>Registerasi berhasil</b>,
+						<br> silahkan login terlebuh dahulu</h5></div>');
+					$this->load->view('user/login');
+				} else {
+					$this->session->set_flashdata('msg_reg', 'registerasi gagal');
+					$this->load->view('user/register');
+				}
+			}
+
+		} else {
+			$this->session->set_flashdata('msg_reg', '<div class="alert alert-danger"><h5 style="color:black;"><b>Registerasi Gagal</b>,
+				<br>Input Ada yang Kosong</h5></div>');
+			$this->load->view('user/register');
+		}
+	}
+
+	/*LOGIN USER*/
+	public function logipel() {
+		if ($this->input->post('submit')) {
+			$this->form_validation->set_rules('usernamepel', 'this input', 'trim|required|max_length[35]');
+			$this->form_validation->set_rules('passwordpel', 'this input', 'trim|required|max_length[35]');
+			if ($this->form_validation->run() == true) {
+				if ($this->Mo_resiklaundry->logipel_proc() == true) {
+					redirect('Con_resiklaundry/check_sesspel');
+				} else {
+					$data['logpel_fail'] = "Username or password wrong";
+					$this->load->view('user/login', $data);
+				}
+			} else {
+				$this->load->view('user/login');
+			}
+		}
+	}
+	/*SECURITY CHECK SESSION USER*/
+	public function check_sesspel() {
+		if ($this->session->userdata('login') == false) {
+			redirect('Con_resiklaundry/logipel');
+		} else {
+			$this->load->view('user/index');
+		}
+	}
+	/*LOGOUT USER*/
+	public function logoutpel() {
+		$this->session->sess_destroy();
+		redirect('Con_resiklaundry/dash_logipel');
+	}
+	/*UPDATE USER*/
+	public function uppel() {
+		$id_pelanggan = $this->input->post('id_pelanggan');
+		$namapel      = $this->input->post('namapel');
+		$alapel       = $this->input->post('alapel');
+		$nopel        = $this->input->post('nopel');
+		$emapel       = $this->input->post('emapel');
+		$usernamepel  = $this->input->post('usernamepel');
+		$passwordpel  = $this->input->post('passwordpel');
+
+		$data = array(
+			'id_pelanggan'               => $id_pelanggan,
+			'namapel'                    => $namapel,
+			'alapel'                     => $alapel,
+			'nopel'                      => $nopel,
+			'emapel'                     => $emapel,
+			'usernamepel'                => $usernamepel,
+			'passwordpel'                => $passwordpel);
+		$where = array('id_pelanggan' => $id_pelanggan);
+		$this->Mo_resiklaundry->uppel_proc($data, $where, 'pelanggan');
+		redirect('Con_resiklaundry/index');
+	}
+
+	/*UPDATE USER FOR ADMIN*/
+	public function uppel2() {
+		$id_pelanggan = $this->input->post('id_pelanggan');
+		$namapel      = $this->input->post('namapel');
+		$alapel       = $this->input->post('alapel');
+		$nopel        = $this->input->post('nopel');
+		$emapel       = $this->input->post('emapel');
+		$usernamepel  = $this->input->post('usernamepel');
+		$passwordpel  = $this->input->post('passwordpel');
+
+		$data = array(
+			'id_pelanggan'               => $id_pelanggan,
+			'namapel'                    => $namapel,
+			'alapel'                     => $alapel,
+			'nopel'                      => $nopel,
+			'emapel'                     => $emapel,
+			'usernamepel'                => $usernamepel,
+			'passwordpel'                => $passwordpel);
+		$where = array('id_pelanggan' => $id_pelanggan);
+		$this->Mo_resiklaundry->uppel_proc($data, $where, 'pelanggan');
+		redirect('Con_resiklaundry/datapel_control');
+	}
+
+	/*DELETE USER*/
+	public function delpel($id_pelanggan) {
+		$where = array('id_pelanggan' => $id_pelanggan);
+		$this->Mo_resiklaundry->delpel_proc($where, 'pelanggan');
+		redirect('Con_resiklaundry/dash_logipel');
+	}
+
+	/*FEEDBACK USER*/
+	public function feedpel() {
+		if ($this->input->post('submit')) {
+			$this->form_validation->set_rules('isifeedu', 'input', 'trim|required');
+			if ($this->form_validation->run() == true) {
+				if ($this->Mo_resiklaundry->feedpel_proc() == true) {
+					$this->load->view('user/index');
+				} else {
+					$data['feedpel_fail'] = "feedback gagal";
+					$this->load->view('user/index', $data);
+				}
+			} else {
+				$this->load->view('user/index');
+			}
+
+		}
+	}
+
+	//TRANSAKSI
+	public function transaksi() {
+		if ($this->input->post('submit')) {
+			$this->form_validation->set_rules('alamatpel', 'Input', 'trim|required');
+			if ($this->form_validation->run() == TRUE) {
+				if ($this->Mo_resiklaundry->proc_transaksi() == true) {
+					$this->session->set_flashdata('msg_trans',
+						'<div class="alert alert-success">
+						<h4><b>success transaksi</b></h4>
+						<br>
+						<p>silahkan lihat di Mydata transaksi saya</p>
+						</div>');
+					$this->load->view('user/index');
+				} else {
+					$this->session->set_flashdata('msg_trans', '<div class="alert alert-danger">
+						<h3>gagal transaksi</h3>
+						</div>');
+					$this->load->view('user/index');
+				}
+			} else {
+				$this->session->set_flashdata('msg_trans', '<div class="alert alert-danger">
+						<h3>gagal transaksi</h3>
+						<p>Input Kosong</p>
+						</div>');
+				$this->load->view('user/index');
+			}
+		}
+
+	}
+	//LIHAT MAIL USER
+	public function see_mailuser($id_pelanggan) {
+		$where                  = array('id_pelanggan' => $id_pelanggan);
+		$data['lihat_mailuser'] = $this->Mo_resiklaundry->proc_see_mailuser('feedback_admin', $where)->result();
+		$this->load->view('user/tabel_mail', $data);
+	}
+	//LIHAT TRANSAKSI
+	public function see_transaksi($id_pelanggan) {
+		$where                   = array('id_pelanggan' => $id_pelanggan);
+		$data['lihat_transaksi'] = $this->Mo_resiklaundry->proc_see_transaksi('transaksi', $where)->result();
+		$this->load->view('user/transaksi', $data);
+	}
+	//DELETE DATA TRANSAKSI
+	public function del_transaksi($id_transaksi) {
+		$where = array('id_transaksi' => $id_transaksi);
+		$this->Mo_resiklaundry->proc_del_transaksi($where, 'transaksi');
+		$this->session->set_flashdata('msg_del_trans', '<div class="alert alert-danger"> Berhasil dihapus
+			</div>');
+		redirect('Con_resiklaundry/see_transaksi/'.$this->session->id_pelanggan.'', 'refresh');
+
+	}
+
+	/*-----------------------ADMIN---------------------*/
+	/*MEAN SITE IS , THE FUNCTION PLACE CONFIGURE IN FILE ADMIN OR ADMIN WORK*/
+	public function dash_regad() {
+		$this->load->view('admin/register_admin');
+	}
+	public function dash_logad() {
+		$this->load->view('admin/login_admin');
+	}
+	/*HITUNG DATA TAMPIL DI KOTAK STATISTIK*/
+	public function Statistik() {
+		$data['title']                = "Statistik";
+		$data['content']              = "admin/sub_content/statistik";
+		$data['countpel']             = $this->db->count_all('pelanggan');
+		$data['countad']              = $this->db->count_all('admin');
+		$data['countfeedpel']         = $this->db->count_all('feedback_user');
+		$data['counttrans']           = $this->db->count_all('transaksi');
+		$data['see_status_admin_var'] = $this->Mo_resiklaundry->proc_see_admin_status()->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	/*TABEL PENGATUR DATA PELANGGAN*/
+	public function datapel_control() {
+		$data['title']   = "Data Pelanggan";
+		$data['content'] = "admin/sub_content/tabel_pelanggan";
+		$data['datapel'] = $this->Mo_resiklaundry->datapel_control_proc()->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	/*REGISTER DATA ADMIN*/
+	public function regad() {
+		if ($this->input->post('submit')) {
+			$usernamad = $this->input->post('usernamad');
+			$this->form_validation->set_rules('namad', 'this input', 'trim|required');
+			$this->form_validation->set_rules('emailad', 'this input', 'trim|required|max_length[40]');
+			$this->form_validation->set_rules('nomad', 'this input', 'trim|required');
+			$this->form_validation->set_rules('usernamad', 'this input', 'trim|required|max_length[35]');
+			$this->form_validation->set_rules('passwordad', 'this input', 'trim|required|max_length[35]');
+			$this->form_validation->set_rules('status', 'this input', 'trim|required');
+
+			if ($this->form_validation->run() == true) {
+				if ($this->Mo_resiklaundry->check_regadduplicate($usernamad) == true) {
+					$data['dup_usernamad'] = "Username ini sudah terdaftar, coba lagi";
+					$this->load->view('admin/register_admin', $data);
+				} else {
+					if ($this->Mo_resiklaundry->regad_proc() == true) {
+						$this->load->view('admin/login_admin');
+					} else {
+						$data['regad_fail'] = "registerasi gagal";
+						$this->load->view('admin/register_admin');
+					}
+				}
+			} else {
+				$this->load->view('admin/register_admin');
+			}
+		}
+	}
+
+	/*LOGIN DATA ADMIN*/
+	public function logad() {
+		if ($this->input->post('submit')) {
+			$this->form_validation->set_rules('usernamad', 'this input', 'trim|required|max_length[35]');
+			$this->form_validation->set_rules('passwordad', 'this input', 'trim|required|max_length[35]');
+			if ($this->form_validation->run() == true) {
+				if ($this->Mo_resiklaundry->logad_proc() == true) {
+					redirect('Con_resiklaundry/check_sessad');
+				} else {
+					$data['logad_fail'] = "Username atau password salah";
+					$this->load->view('admin/login_admin', $data);
+				}
+			} else {
+				$this->load->view('admin/login_admin');
+			}
+		}
+	}
+	/*CHECK SESSION ADMIN WHEN LOGIN*/
+	public function check_sessad() {
+		if ($this->session->userdata('login') != true) {
+			redirect('Con_resiklaundry/dash_logad');
+		} else {
+			redirect('Con_resiklaundry/Statistik');
+		}
+	}
+	/*LOGOUT ADMIN*/
+	public function logoutad() {
+		$this->session->sess_destroy();
+		redirect('Con_resiklaundry/dash_logad');
+	}
+	/*TABEL LIHAT DATA SELURUH ADMIN*/
+	public function see_alldatad() {
+		$data['title']   = "Data Admin";
+		$data['content'] = "admin/sub_content/tabel_admin";
+		$data['datad']   = $this->Mo_resiklaundry->see_alldatad_proc()->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	/*UPDATE AND SEE MY DATA ADMIN*/
+	public function see_mydatad() {
+		$data['title']   = "My Data Admin";
+		$data['content'] = "admin/sub_content/edit_myadmin";
+		$this->load->view('admin/index_admin', $data);
+	}
+	/*PROCESS UPDATE MY DATA ADMIN*/
+	public function up_mydatad() {
+		$id_admin   = $this->input->post('id_admin');
+		$namad      = $this->input->post('namad');
+		$emailad    = $this->input->post('emailad');
+		$nomad      = $this->input->post('nomad');
+		$usernamad  = $this->input->post('usernamad');
+		$passwordad = $this->input->post('passwordad');
+		$status     = $this->input->post('status');
+		$data       = array(
+			'id_admin'               => $id_admin,
+			'namad'                  => $namad,
+			'emailad'                => $emailad,
+			'nomad'                  => $nomad,
+			'usernamad'              => $usernamad,
+			'passwordad'             => $passwordad,
+			'status'                 => $status);
+		$where = array('id_admin' => $id_admin);
+		$this->Mo_resiklaundry->up_mydatad_proc('admin', $data, $where);
+		redirect('Con_resiklaundry/see_mydatad');
+	}
+	/*SEE FEEDBACK FROM USER*/
+	public function see_feedpel() {
+		$data['title']        = "Data Feedback";
+		$data['content']      = "admin/sub_content/tabel_feedbackuser";
+		$data['feedpel_data'] = $this->Mo_resiklaundry->see_feedpel_proc()->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	/*FORM FEEDBACK ADMIN TO USER*/
+	public function detail_form_feedbackad($id_feedbacku) {
+		$where             = array('id_feedbacku' => $id_feedbacku);
+		$data['title']     = "Form Feedback Admin";
+		$data['content']   = "admin/sub_content/form_feedbackad";
+		$data['form_fbad'] = $this->Mo_resiklaundry->process_detail_form_feedbackad('feedback_user', $where)->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	/*FEEDBACK ADMIN TO USER*/
+	public function feedad() {
+		if ($this->input->post('submit')) {
+			if ($this->Mo_resiklaundry->feedad_proc() == true) {
+				redirect('Con_resiklaundry/statistik');
+			} else {
+				$data['notif_feedad'] = "Kirim Feedback Gagal";
+				redirect('Con_resiklaundry/form_feedbackad', $data);
+			}
+		}
+	}
+	/* TAKE DATA BERDASARKAN "ID" USER FOR ADMIN*/
+	public function form_updatapel($id_pelanggan) {
+		$where                      = array('id_pelanggan' => $id_pelanggan);
+		$data['title']              = "Form Edit Pelanggan";
+		$data['content']            = "admin/sub_content/form_admin_editpelanggan";
+		$data['see_pelanggan_data'] = $this->Mo_resiklaundry->process_form_updatapel('pelanggan', $where)->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	/*DELETE USER FOR ADMIN*/
+	public function delpel2($id_pelanggan) {
+		$where = array('id_pelanggan' => $id_pelanggan);
+		$this->Mo_resiklaundry->delpel_proc($where, 'pelanggan');
+		redirect('Con_resiklaundry/datapel_control');
+	}
+	/*FORM CONFIRM DELETE DATA USER FOR ADMIN*/
+	public function confirm_delpel_admin($id_pelanggan) {
+		$where                  = array('id_pelanggan' => $id_pelanggan);
+		$data['title']          = "Konfirmasi hapus akun user";
+		$data['content']        = "admin/sub_content/confirm_delete";
+		$data['confirm_delete'] = $this->Mo_resiklaundry->process_form_updatapel('pelanggan', $where)->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	//PILIHAN HAPUS FEEDBACK USER
+	public function del_feedbacku_confirm($id_feedbacku) {
+		$where                     = array('id_feedbacku' => $id_feedbacku);
+		$data['title']             = "Konfirmasi hapus feedback";
+		$data['content']           = "admin/sub_content/confirm_delete_feedbacku";
+		$data['confirm_feedbacku'] = $this->Mo_resiklaundry->proc_del_feedbacku_confirm('feedback_user', $where)->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+	//HAPUS FEEDBACK USER FOR ADMIN
+	public function del_feedbacku($id_feedbacku) {
+		$where = array('id_feedbacku' => $id_feedbacku);
+		$this->Mo_resiklaundry->proc_del_feedbacku('feedback_user', $where);
+		redirect('Con_resiklaundry/see_feedpel', 'refresh');
+	}
+	//LIHAT DATA TRANSAKSI
+	public function see_transaksi_foradmin() {
+		$data['title']           = "Tabel Transaksi";
+		$data['content']         = "admin/sub_content/tabel_transaksi";
+		$data['lihat_transaksi'] = $this->Mo_resiklaundry->proc_see_transaksi_foradmin()->result();
+		$this->load->view('admin/index_admin', $data);
+	}
+
+}
+
+/* End of file Con_resiklaundry.php */
+/* Location: ./application/controllers/Con_resiklaundry.php */

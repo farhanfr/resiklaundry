@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Bukti Transaksi</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="<?= base_url();?>assets/css/bootstrap.css">
+	<script type="text/javascript" src="<?= base_url();?>assets/js/jquery.js"></script>
+	<script type="text/javascript" src="<?= base_url();?>assets/js/bootstrap.min.js"></script>
+	<style type="text/css">
+		.bukti_transaksi{
+			background-color: transparent;
+			width: 100%;
+			padding: 2%;
+			height: 80vh;
+			border: 1px solid black;
+			list-style: none;
+		}
+		.bukti_transaksi h3{
+			padding-bottom: 4%;
+		}
+		#notif_del_trans{
+		cursor: pointer;
+		position: fixed;
+		right: 0px;
+		bottom: 0px;
+		margin-bottom: 22px;
+		margin-right: 15px;
+		min-width: 300px; 
+		max-width: 800px;  
+}
+	</style>
+</head>
+<body>
+
+<h2 style="text-align: center;">Transaksi Saya</h2>
+<p style="text-align: center;">Silahkan anda screenshot untuk menunjukkan bukti pemesan kepada petugas kami (Rekomendasi aplikasi: Snipping tool)</p>
+<?php
+echo anchor('Con_resiklaundry/index', '<center><button class="btn btn-info">Kembali ke dashboard</button></center>');
+?>
+
+<div class="container-fluid">
+<div class="row">
+<?php
+foreach ($lihat_transaksi as $lt) { ?>
+	<div class="col-xs-12 col-sm-6 col-md-4 col-lg-4">
+		<div class="bukti_transaksi">
+<h3 style="text-align: center;">ResikLaundry - Bukti Pemesanan</h3>
+		<h4>Tanggal</h4>
+		<li><?php echo $lt->tgl_trans ;?></li>
+		<h4>Nama Anda</h4>
+		<li><?php echo $lt->namapel ;?></li>
+		<h4>Alamat</h4>
+		<li><?php echo $lt->alamatpel ;?></li>
+		<h4>Jenis Paket</h4>
+		<li><?php echo $lt->jenis_paket ;?></li>
+		<h4>Keterangan</h4>
+		<li><?php echo $lt->keterangan ;?></li>
+		<h4>Harga</h4>
+		<li>
+			<?php 
+				if ($lt->jenis_paket == "kiloan") {
+					echo 'Rp.15.000';
+				}
+				elseif ($lt->jenis_paket == "flash") {
+					echo 'Rp.25.000';
+				}
+				elseif ($lt->jenis_paket == "platinum") {
+					echo 'Rp.50.000';
+				}
+		 ?></li>
+		</div>
+	  <?= 
+	anchor('Con_resiklaundry/del_transaksi/'.$lt->id_transaksi.'', '<input class="btn btn-danger" type="submit" name="submit" value="Hapus">');
+	  ?>
+	</div>
+<?php } ?>
+</div>
+</div>
+
+<div id="notif_del_trans"><?php echo $this->session->flashdata('msg_del_trans');?></div>
+</body>
+</html>
+<script type="text/javascript">
+	$('#notif_del_trans').slideDown('slow').delay(3000).slideUp('slow');
+</script>
